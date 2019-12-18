@@ -4,9 +4,7 @@ library(FinCal)
 library(shiny)
 
 # TODO: 
-#  - Persistence (https://shiny.rstudio.com/articles/persistent-data-storage.html)
-#  - Investigate cap_rate issue (compare values to excel sheet, numbers way off)
-#  - Put code on github
+#  - Local File Persistence (https://shiny.rstudio.com/articles/persistent-data-storage.html)
 
 ui <- fluidPage(
   titlePanel("Property Analysis"),
@@ -154,6 +152,18 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
+  # Save / Load functionality
+  
+  form_data <- reactive({
+    data <- sapply(fields_to_save, function(x) input[[x]])
+    
+    data.frame(as.list(data), stringsAsFactors = F)
+  })
+  
+  observeEvent(input$save, {
+    save_data(form_data())
+  })
+  
   # Summary
   output$summary <- renderTable({
     initial_investment <- input$acquisition_costs + input$init_repair_cost + input$down_pmt
@@ -250,5 +260,15 @@ calc_ops_data <- function(tbl) {
 }
 
 # Persistence 
+fields_to_save = c("name", "desc", "property_value", "purchase_price", "mortgage_payment", "prop_taxes", "prop_insurance", "acquisition_costs", "down_pmt", "init_repair_cost", "property_mgmt_rate", "maintenance_reserve", "hoa_dues", "utilities", "years", "monthly_rent", "rent_appr_rate", "vacancy_rate", "property_appr_rate")
+
+save_data <- function(data) {
+  fileName <- "rei-prop-analysis-properties.csv"
+  write.csv(
+    x = data,
+    file = file.path(fileName),
+    row.names = F, quote = T
+  )
+}
 
 shinyApp(ui = ui, server = server)
